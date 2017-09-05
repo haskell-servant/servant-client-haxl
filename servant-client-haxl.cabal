@@ -1,0 +1,67 @@
+-- This file has been generated from package.yaml by hpack version 0.17.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           servant-client-haxl
+version:        0.0.0.0
+synopsis:       Haxl-based client functions for servant APIs
+stability:      alpha
+homepage:       http://github.com/jkarni/servant-client-haxl#readme
+bug-reports:    https://github.com/jkarni/servant-client-haxl/issues
+author:         Julian K. Arni
+maintainer:     jkarni@turingjump.com
+copyright:      (c) 2017 Julian K. Arni
+license:        BSD3
+license-file:   LICENSE
+tested-with:    GHC == 7.10.3, GHC == 8.0.2
+build-type:     Simple
+cabal-version:  >= 1.10
+
+source-repository head
+  type: git
+  location: https://github.com/jkarni/servant-client-haxl
+
+library
+  hs-source-dirs:
+      src
+  default-extensions: AutoDeriveTypeable ConstraintKinds DataKinds DefaultSignatures DeriveAnyClass DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable FlexibleContexts FlexibleInstances FunctionalDependencies GADTs KindSignatures MultiParamTypeClasses OverloadedStrings RankNTypes ScopedTypeVariables TypeFamilies TypeOperators
+  ghc-options: -Wall
+  build-depends:
+      base >= 4.8 && < 4.10
+    , bytestring >= 0.10 && < 0.11
+    , text >= 1 && < 2
+    , servant-client >= 0.12 && < 0.13
+    , haxl >= 0.5 && < 0.6
+    , http-client >= 0.5 && < 0.6
+    , http-types >= 0.9 && < 0.10
+    , hashable >= 1 && < 2
+  exposed-modules:
+      Servant.Client.Haxl
+      Servant.Client.Haxl.Internal
+      Servant.Client.Haxl.Internal.Types
+  default-language: Haskell2010
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  hs-source-dirs:
+      test
+  default-extensions: AutoDeriveTypeable ConstraintKinds DataKinds DefaultSignatures DeriveAnyClass DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable FlexibleContexts FlexibleInstances FunctionalDependencies GADTs KindSignatures MultiParamTypeClasses OverloadedStrings RankNTypes ScopedTypeVariables TypeFamilies TypeOperators
+  ghc-options: -Wall
+  build-depends:
+      base >= 4.8 && < 4.10
+    , bytestring >= 0.10 && < 0.11
+    , text >= 1 && < 2
+    , servant-client >= 0.12 && < 0.13
+    , haxl >= 0.5 && < 0.6
+    , http-client >= 0.5 && < 0.6
+    , http-types >= 0.9 && < 0.10
+    , hashable >= 1 && < 2
+    , servant-client-haxl
+    , hspec > 2 && < 3
+    , QuickCheck >= 2.8 && < 2.10
+    , quickcheck-instances >= 0.3 && < 0.4
+  other-modules:
+      Servant.Client.HaxlSpec
+      Spec
+  default-language: Haskell2010

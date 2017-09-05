@@ -1,0 +1,7 @@
+flags: {}
+extra-package-dbs: []
+packages:
+- '.'
+- '../servant/servant-client'
+extra-deps: []
+resolver: lts-9.3
