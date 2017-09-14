@@ -2,6 +2,11 @@ flags: {}
 extra-package-dbs: []
 packages:
 - '.'
-- '../servant/servant-client'
+- location: '../servant/servant'
+  extra-dep: true
+- location: '../servant/servant-client'
+  extra-dep: true
+- location: '../servant/servant-client-core'
+  extra-dep: true
 extra-deps: []
 resolver: lts-9.3

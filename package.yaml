@@ -18,18 +18,21 @@ dependencies:
   - base >= 4.8 && < 4.10
   - bytestring >= 0.10 && < 0.11
   - text >= 1 && < 2
-  - servant-client >= 0.12 && < 0.13
+  - servant-client >= 0.11 && < 0.13
+  - servant-client-core >= 0.11 && < 0.13
   - haxl >= 0.5 && < 0.6
   - http-client >= 0.5 && < 0.6
   - http-types >= 0.9 && < 0.10
+  - http-media >= 0.6 && < 0.7
   - hashable >= 1 && < 2
+  - exceptions >= 0.8 && < 0.9
+  - mtl >= 2.2 && < 2.3
 
 default-extensions:
   - AutoDeriveTypeable
   - ConstraintKinds
   - DataKinds
   - DefaultSignatures
-  - DeriveAnyClass
   - DeriveFoldable
   - DeriveFunctor
   - DeriveGeneric
