@@ -1,18 +1,21 @@
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE StandaloneDeriving         #-}
 module Servant.Client.Haxl.Internal.Types where
 
-import Control.Monad.Catch  (MonadCatch, MonadThrow)
+import Control.Concurrent.Async (Async, async, wait)
+import Control.Concurrent.QSem  (QSem, waitQSem, signalQSem, newQSem)
+import Control.Exception        (SomeException, bracket_, try)
+import Control.Monad.Catch      (MonadCatch, MonadThrow)
 import Control.Monad.Except
-import Data.Foldable        (toList)
-import Data.Hashable        (Hashable (..))
+import Data.Foldable            (toList)
+import Data.Hashable            (Hashable (..))
 import Data.Monoid
-import GHC.Generics         (Generic)
-import Network.HTTP.Client  (Manager)
-import Network.HTTP.Media   (MediaType, renderHeader)
-import Network.HTTP.Types   (HttpVersion (..))
-import Servant.Client.Core  (BaseUrl, RequestBody (..), RequestF (..),
-                             Response, RunClient (..), ServantError)
+import GHC.Generics             (Generic)
+import Network.HTTP.Client      (Manager)
+import Network.HTTP.Media       (MediaType, renderHeader)
+import Network.HTTP.Types       (HttpVersion (..))
+import Servant.Client.Core      (BaseUrl, RequestBody (..), RequestF (..),
+                                 Response, RunClient (..), ServantError)
 
 import qualified Data.ByteString.Builder as Builder
 import qualified Data.ByteString.Lazy    as BSL
@@ -61,22 +64,24 @@ instance Haxl.StateKey ServantHaxlRequest where
       } -- deriving (Eq, Show, Generic, Hashable)
 
 instance Haxl.DataSource u ServantHaxlRequest where
-  fetch requestState flags _ requests
-    | shrsNumThreads requestState == 1 = Haxl.SyncFetch $ mapM_ go requests
-      {-runRequest (shrsManager requestState)-}
-    {-| otherwise                        = Haxl.AsyncFetch $ _-}
-      {-runRequest (shrsManager requestState)-}
+  fetch requestState _flags _ requests = Haxl.AsyncFetch $ \inner -> do
+    sem <- newQSem (shrsNumThreads requestState)
+    asyncs <- mapM (go sem) requests
+    inner
+    mapM_ wait asyncs
     where
-      go :: Haxl.BlockedFetch ServantHaxlRequest -> IO ()
-      go (Haxl.BlockedFetch (ServantHaxlRequest request) rvar) = do
-        response <- HttpClient.runClientM
-          (runRequest $ fmap Builder.lazyByteString request)
-          (HttpClient.ClientEnv (shrsManager requestState)
-                                (shrsBaseUrl requestState))
-        Haxl.putSuccess rvar response
+      go :: QSem -> Haxl.BlockedFetch ServantHaxlRequest -> IO (Async ())
+      go sem (Haxl.BlockedFetch (ServantHaxlRequest request) rvar) = async $ do
+        bracket_ (waitQSem sem) (signalQSem sem) $ do
+          response <- try $ HttpClient.runClientM
+            (runRequest $ fmap Builder.lazyByteString request)
+            (HttpClient.ClientEnv (shrsManager requestState)
+                                  (shrsBaseUrl requestState))
+          case response of
+            Left  e -> Haxl.putFailure rvar (e :: SomeException)
+            Right r -> Haxl.putSuccess rvar r
 
 
 instance RunClient ClientM where
   runRequest request = ClientM . ExceptT . Haxl.dataFetch . ServantHaxlRequest
     $ Builder.toLazyByteString <$> request
-
