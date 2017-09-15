@@ -1,21 +1,22 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE StandaloneDeriving         #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Servant.Client.Haxl.Internal.Types where
 
 import Control.Concurrent.Async (Async, async, wait)
 import Control.Concurrent.QSem  (QSem, waitQSem, signalQSem, newQSem)
 import Control.Exception        (SomeException, bracket_, try)
-import Control.Monad.Catch      (MonadCatch, MonadThrow)
-import Control.Monad.Except
+{-import Control.Monad.Catch      (MonadCatch, MonadThrow)-}
+{-import Control.Monad.Except-}
 import Data.Foldable            (toList)
 import Data.Hashable            (Hashable (..))
 import Data.Monoid
-import GHC.Generics             (Generic)
-import Network.HTTP.Client      (Manager)
+{-import GHC.Generics             (Generic)-}
+import Network.HTTP.Client      (Manager, newManager, defaultManagerSettings)
 import Network.HTTP.Media       (MediaType, renderHeader)
 import Network.HTTP.Types       (HttpVersion (..))
 import Servant.Client.Core      (BaseUrl, RequestBody (..), RequestF (..),
-                                 Response, RunClient (..), ServantError)
+                                 Response, RunClient (..), ServantError(..))
 
 import qualified Data.ByteString.Builder as Builder
 import qualified Data.ByteString.Lazy    as BSL
@@ -29,10 +30,10 @@ data ServantHaxlRequest a where
 deriving instance Eq (ServantHaxlRequest a)
 deriving instance Show (ServantHaxlRequest a)
 
-newtype ClientM a
-  = ClientM { runClientM' :: ExceptT ServantError (Haxl.GenHaxl ()) a }
-  deriving ( Functor, Applicative, Monad, Generic
-           , MonadThrow, MonadCatch, MonadError ServantError)
+{-newtype ClientM a-}
+  {-= ClientM { runClientM' :: ExceptT ServantError (Haxl.GenHaxl ()) a }-}
+  {-deriving ( Functor, Applicative, Monad, Generic-}
+           {-, MonadThrow, MonadCatch, MonadError ServantError)-}
 
 instance Haxl.DataSourceName ServantHaxlRequest where
   dataSourceName _ = "ServantHaxlRequest"
@@ -58,14 +59,22 @@ instance Hashable (ServantHaxlRequest a) where
 
 instance Haxl.StateKey ServantHaxlRequest where
   data State ServantHaxlRequest = ServantHaxlRequestState
-      { shrsNumThreads :: Int
-      , shrsManager    :: Manager
-      , shrsBaseUrl    :: BaseUrl
-      } -- deriving (Eq, Show, Generic, Hashable)
+      { numThreads :: Int
+      , manager    :: Manager
+      , baseUrl    :: BaseUrl
+      }
+
+initDataSource :: Int -> BaseUrl -> IO (Haxl.State ServantHaxlRequest)
+initDataSource threads baseUrl'
+   = ServantHaxlRequestState
+ <$> pure threads
+ <*> newManager defaultManagerSettings
+ <*> pure baseUrl'
+
 
 instance Haxl.DataSource u ServantHaxlRequest where
   fetch requestState _flags _ requests = Haxl.AsyncFetch $ \inner -> do
-    sem <- newQSem (shrsNumThreads requestState)
+    sem <- newQSem (numThreads requestState)
     asyncs <- mapM (go sem) requests
     inner
     mapM_ wait asyncs
@@ -75,13 +84,19 @@ instance Haxl.DataSource u ServantHaxlRequest where
         bracket_ (waitQSem sem) (signalQSem sem) $ do
           response <- try $ HttpClient.runClientM
             (runRequest $ fmap Builder.lazyByteString request)
-            (HttpClient.ClientEnv (shrsManager requestState)
-                                  (shrsBaseUrl requestState))
+            (HttpClient.ClientEnv (manager requestState)
+                                  (baseUrl requestState))
           case response of
             Left  e -> Haxl.putFailure rvar (e :: SomeException)
             Right r -> Haxl.putSuccess rvar r
 
+instance RunClient (Haxl.GenHaxl u) where
+  runRequest request = do
+    eresp <- Haxl.dataFetch . ServantHaxlRequest $ Builder.toLazyByteString <$> request
+    case eresp of
+      Left e -> Haxl.throw e
+      Right v -> return v
 
-instance RunClient ClientM where
-  runRequest request = ClientM . ExceptT . Haxl.dataFetch . ServantHaxlRequest
-    $ Builder.toLazyByteString <$> request
+{-instance RunClient ClientM where-}
+  {-runRequest request = ClientM . ExceptT . Haxl.dataFetch . ServantHaxlRequest-}
+    {-$ Builder.toLazyByteString <$> request-}

@@ -1,4 +1,9 @@
-module Servant.Client.Haxl (module X) where
+module Servant.Client.Haxl
+  ( module Servant.Client.Core.Reexport
+  , ServantHaxlRequest
+  , initDataSource
+  , client
+  ) where
 
-import Servant.Client as X
-import Servant.Client.Haxl.Internal ()
+import Servant.Client.Core.Reexport
+import Servant.Client.Haxl.Internal
