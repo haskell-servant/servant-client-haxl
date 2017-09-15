@@ -1,7 +1,7 @@
 name:                servant-client-haxl
 version:             0.0.0.0
 synopsis:            Haxl-based client functions for servant APIs
-description:
+description:         See README.md
 homepage:            http://github.com/jkarni/servant-client-haxl#readme
 license:             BSD3
 license-file:        LICENSE

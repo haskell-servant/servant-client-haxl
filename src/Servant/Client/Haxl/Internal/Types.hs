@@ -4,19 +4,16 @@
 module Servant.Client.Haxl.Internal.Types where
 
 import Control.Concurrent.Async (Async, async, wait)
-import Control.Concurrent.QSem  (QSem, waitQSem, signalQSem, newQSem)
+import Control.Concurrent.QSem  (QSem, newQSem, signalQSem, waitQSem)
 import Control.Exception        (SomeException, bracket_, try)
-{-import Control.Monad.Catch      (MonadCatch, MonadThrow)-}
-{-import Control.Monad.Except-}
 import Data.Foldable            (toList)
 import Data.Hashable            (Hashable (..))
 import Data.Monoid
-{-import GHC.Generics             (Generic)-}
-import Network.HTTP.Client      (Manager, newManager, defaultManagerSettings)
+import Network.HTTP.Client      (Manager, defaultManagerSettings, newManager)
 import Network.HTTP.Media       (MediaType, renderHeader)
 import Network.HTTP.Types       (HttpVersion (..))
 import Servant.Client.Core      (BaseUrl, RequestBody (..), RequestF (..),
-                                 Response, RunClient (..), ServantError(..))
+                                 Response, RunClient (..), ServantError (..))
 
 import qualified Data.ByteString.Builder as Builder
 import qualified Data.ByteString.Lazy    as BSL
@@ -29,11 +26,6 @@ data ServantHaxlRequest a where
 
 deriving instance Eq (ServantHaxlRequest a)
 deriving instance Show (ServantHaxlRequest a)
-
-{-newtype ClientM a-}
-  {-= ClientM { runClientM' :: ExceptT ServantError (Haxl.GenHaxl ()) a }-}
-  {-deriving ( Functor, Applicative, Monad, Generic-}
-           {-, MonadThrow, MonadCatch, MonadError ServantError)-}
 
 instance Haxl.DataSourceName ServantHaxlRequest where
   dataSourceName _ = "ServantHaxlRequest"
@@ -96,7 +88,5 @@ instance RunClient (Haxl.GenHaxl u) where
     case eresp of
       Left e -> Haxl.throw e
       Right v -> return v
-
-{-instance RunClient ClientM where-}
-  {-runRequest request = ClientM . ExceptT . Haxl.dataFetch . ServantHaxlRequest-}
-    {-$ Builder.toLazyByteString <$> request-}
+  throwServantError = Haxl.throw
+  catchServantError = Haxl.catch
