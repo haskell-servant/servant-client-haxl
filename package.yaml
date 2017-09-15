@@ -56,10 +56,14 @@ library:
 
 tests:
   spec:
-    main:            Main.hs
+    main:            Spec.hs
     source-dirs:     test
     dependencies:
       - servant-client-haxl
+      - aeson
       - hspec > 2 && < 3
       - QuickCheck >= 2.8 && < 2.10
       - quickcheck-instances >= 0.3 && < 0.4
+      - servant
+      - servant-server
+      - warp
